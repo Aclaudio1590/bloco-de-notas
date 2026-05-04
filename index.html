@@ -26,10 +26,7 @@ button, select, input {
     font-size: 16px;
 }
 
-/* Cartões estilo Google Keep */
-#listaNotas {
-    margin-top: 15px;
-}
+/* Cartões simples */
 .notaItem {
     background: #fff8b3;
     padding: 10px;
@@ -40,18 +37,6 @@ button, select, input {
 .dark .notaItem {
     background: #333;
     border-color: #555;
-}
-.notaTexto {
-    white-space: pre-wrap;
-    margin-bottom: 8px;
-}
-.notaData {
-    font-size: 12px;
-    opacity: 0.7;
-    margin-bottom: 6px;
-}
-.pinned {
-    border-left: 6px solid #ff9800;
 }
 </style>
 </head>
@@ -82,12 +67,8 @@ button, select, input {
 <script>
 let notaAtual = null;
 
-function carregarNotas() {
-    return JSON.parse(localStorage.getItem("notas_keep")) || [];
-}
-
-function guardarNotas(notas) {
-    localStorage.setItem("notas_keep", JSON.stringify(notas));
+function total() {
+    return parseInt(localStorage.getItem("total_notas") || "0");
 }
 
 function novaNota() {
@@ -98,82 +79,54 @@ function novaNota() {
 
 function guardar() {
     let texto = document.getElementById("texto").value;
-    let notas = carregarNotas();
 
     if (notaAtual === null) {
-        notas.push({
-            id: Date.now(),
-            texto: texto,
-            data: new Date().toLocaleString(),
-            pinned: false
-        });
+        let n = total() + 1;
+        localStorage.setItem("nota_" + n, texto);
+        localStorage.setItem("total_notas", n);
     } else {
-        let n = notas.find(n => n.id === notaAtual);
-        if (n) {
-            n.texto = texto;
-            n.data = new Date().toLocaleString();
-        }
+        localStorage.setItem("nota_" + notaAtual, texto);
     }
 
-    guardarNotas(notas);
     mostrarNotas();
     alert("Guardado!");
 }
 
 function editar(id) {
-    let notas = carregarNotas();
-    let n = notas.find(n => n.id === id);
-    if (!n) return;
-
     notaAtual = id;
-    document.getElementById("texto").value = n.texto;
+    document.getElementById("texto").value = localStorage.getItem("nota_" + id);
     document.getElementById("editor").style.display = "block";
 }
 
 function apagar(id) {
-    let notas = carregarNotas();
-    notas = notas.filter(n => n.id !== id);
-    guardarNotas(notas);
-    mostrarNotas();
-}
-
-function fixar(id) {
-    let notas = carregarNotas();
-    let n = notas.find(n => n.id === id);
-    if (!n) return;
-
-    n.pinned = !n.pinned;
-    guardarNotas(notas);
+    localStorage.removeItem("nota_" + id);
     mostrarNotas();
 }
 
 function mostrarNotas() {
-    let notas = carregarNotas();
     let div = document.getElementById("listaNotas");
     let termo = document.getElementById("pesquisa").value.toLowerCase();
 
     div.innerHTML = "";
 
-    // Filtrar por pesquisa
-    notas = notas.filter(n => n.texto.toLowerCase().includes(termo));
+    let t = total();
 
-    // Ordenar: fixadas primeiro
-    notas.sort((a, b) => b.pinned - a.pinned);
+    for (let i = 1; i <= t; i++) {
+        let texto = localStorage.getItem("nota_" + i);
+        if (!texto) continue;
 
-    notas.forEach(n => {
+        if (!texto.toLowerCase().includes(termo)) continue;
+
         let bloco = document.createElement("div");
         bloco.className = "notaItem";
-        if (n.pinned) bloco.classList.add("pinned");
 
         bloco.innerHTML =
-            "<div class='notaTexto'>" + (n.texto || "(vazia)") + "</div>" +
-            "<div class='notaData'>" + n.data + "</div>" +
-            "<button onclick='editar(" + n.id + ")'>Editar</button>" +
-            "<button onclick='apagar(" + n.id + ")'>Apagar</button>" +
-            "<button onclick='fixar(" + n.id + ")'>" + (n.pinned ? "Desafixar" : "Fixar") + "</button>";
+            "<div>" + texto + "</div>" +
+            "<button onclick='editar(" + i + ")'>Editar</button>" +
+            "<button onclick='apagar(" + i + ")'>Apagar</button>";
 
         div.appendChild(bloco);
-    });
+    }
 }
 
 function toggleDark() {
@@ -190,4 +143,3 @@ window.onload = mostrarNotas;
 
 </body>
 </html>
-
