@@ -19,19 +19,16 @@ textarea {
     height: 200px;
     font-size: 16px;
 }
-button, select, input {
+input[type="button"], select, input[type="text"] {
     width: 100%;
     padding: 8px;
     margin-top: 8px;
     font-size: 16px;
 }
-
-/* Cartões simples */
 .notaItem {
     background: #fff8b3;
     padding: 10px;
     margin-bottom: 12px;
-    border-radius: 6px;
     border: 1px solid #e6d97a;
 }
 .dark .notaItem {
@@ -40,14 +37,15 @@ button, select, input {
 }
 </style>
 </head>
-<body>
+<body onload="mostrarNotas()">
 
 <h2>Notas</h2>
 
-<input id="pesquisa" placeholder="Pesquisar..." oninput="mostrarNotas()">
+<input id="pesquisa" type="text" placeholder="Pesquisar...">
+<input type="button" value="Pesquisar" onclick="mostrarNotas()">
 
-<button onclick="novaNota()">Criar nova nota</button>
-<button onclick="toggleDark()">Modo escuro</button>
+<input type="button" value="Criar nova nota" onclick="novaNota()">
+<input type="button" value="Modo escuro" onclick="toggleDark()">
 
 <select id="tamanho" onchange="ajustarTamanho()">
     <option value="14">Letra pequena</option>
@@ -55,20 +53,20 @@ button, select, input {
     <option value="20">Letra grande</option>
 </select>
 
-<!-- Editor -->
 <div id="editor" style="display:none;">
     <textarea id="texto"></textarea>
-    <button onclick="guardar()">Guardar</button>
+    <input type="button" value="Guardar" onclick="guardar()">
 </div>
 
-<!-- Lista -->
 <div id="listaNotas"></div>
 
 <script>
-let notaAtual = null;
+var notaAtual = null;
 
 function total() {
-    return parseInt(localStorage.getItem("total_notas") || "0");
+    var t = localStorage.getItem("total_notas");
+    if (!t) return 0;
+    return parseInt(t);
 }
 
 function novaNota() {
@@ -78,10 +76,10 @@ function novaNota() {
 }
 
 function guardar() {
-    let texto = document.getElementById("texto").value;
+    var texto = document.getElementById("texto").value;
 
     if (notaAtual === null) {
-        let n = total() + 1;
+        var n = total() + 1;
         localStorage.setItem("nota_" + n, texto);
         localStorage.setItem("total_notas", n);
     } else {
@@ -94,7 +92,9 @@ function guardar() {
 
 function editar(id) {
     notaAtual = id;
-    document.getElementById("texto").value = localStorage.getItem("nota_" + id);
+    var t = localStorage.getItem("nota_" + id);
+    if (!t) t = "";
+    document.getElementById("texto").value = t;
     document.getElementById("editor").style.display = "block";
 }
 
@@ -104,41 +104,40 @@ function apagar(id) {
 }
 
 function mostrarNotas() {
-    let div = document.getElementById("listaNotas");
-    let termo = document.getElementById("pesquisa").value.toLowerCase();
+    var div = document.getElementById("listaNotas");
+    var termo = document.getElementById("pesquisa").value.toLowerCase();
+    var t = total();
+    var html = "";
 
-    div.innerHTML = "";
-
-    let t = total();
-
-    for (let i = 1; i <= t; i++) {
-        let texto = localStorage.getItem("nota_" + i);
+    for (var i = 1; i <= t; i++) {
+        var texto = localStorage.getItem("nota_" + i);
         if (!texto) continue;
 
-        if (!texto.toLowerCase().includes(termo)) continue;
+        if (termo && texto.toLowerCase().indexOf(termo) === -1) continue;
 
-        let bloco = document.createElement("div");
-        bloco.className = "notaItem";
-
-        bloco.innerHTML =
-            "<div>" + texto + "</div>" +
-            "<button onclick='editar(" + i + ")'>Editar</button>" +
-            "<button onclick='apagar(" + i + ")'>Apagar</button>";
-
-        div.appendChild(bloco);
+        html += "<div class='notaItem'>";
+        html += "<div>" + texto.replace(/</g,"&lt;") + "</div>";
+        html += "<input type='button' value='Editar' onclick='editar(" + i + ")'>";
+        html += "<input type='button' value='Apagar' onclick='apagar(" + i + ")'>";
+        html += "</div>";
     }
+
+    div.innerHTML = html;
 }
 
 function toggleDark() {
-    document.body.classList.toggle("dark");
+    var c = document.body.className;
+    if (c.indexOf("dark") === -1) {
+        document.body.className = c + " dark";
+    } else {
+        document.body.className = c.replace("dark", "");
+    }
 }
 
 function ajustarTamanho() {
-    let tam = document.getElementById("tamanho").value;
+    var tam = document.getElementById("tamanho").value;
     document.getElementById("texto").style.fontSize = tam + "px";
 }
-
-window.onload = mostrarNotas;
 </script>
 
 </body>
