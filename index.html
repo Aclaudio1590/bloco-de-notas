@@ -35,6 +35,18 @@ input[type="button"], select, input[type="text"] {
     background: #333;
     border-color: #555;
 }
+a {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 6px;
+    background: #ddd;
+    text-decoration: none;
+    color: black;
+}
+.dark a {
+    background: #555;
+    color: white;
+}
 </style>
 </head>
 <body onload="mostrarNotas()">
@@ -117,8 +129,8 @@ function mostrarNotas() {
 
         html += "<div class='notaItem'>";
         html += "<div>" + texto.replace(/</g,"&lt;") + "</div>";
-        html += "<input type='button' value='Editar' onclick='editar(" + i + ")'>";
-        html += "<input type='button' value='Apagar' onclick='apagar(" + i + ")'>";
+        html += "<a href='javascript:editar(" + i + ")'>Editar</a>";
+        html += "<a href='javascript:apagar(" + i + ")'>Apagar</a>";
         html += "</div>";
     }
 
