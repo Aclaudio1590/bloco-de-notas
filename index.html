@@ -8,17 +8,31 @@ body {
     font-family: sans-serif;
     background: #f2f2f2;
     padding: 10px;
+    color: #000;
+}
+.dark {
+    background: #111;
+    color: #eee;
 }
 textarea {
     width: 100%;
-    height: 300px;
+    height: 200px;
     font-size: 16px;
 }
-button {
+button, select {
     width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    font-size: 18px;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 16px;
+}
+#exportBox, #importBox {
+    display: none;
+    margin-top: 15px;
+}
+#exportText, #importText {
+    width: 100%;
+    height: 150px;
+    font-size: 16px;
 }
 </style>
 </head>
@@ -26,21 +40,87 @@ button {
 
 <h2>Bloco de Notas</h2>
 
+<!-- Seleção de página -->
+<select id="pagina" onchange="trocarPagina()">
+    <option value="1">Página 1</option>
+    <option value="2">Página 2</option>
+    <option value="3">Página 3</option>
+</select>
+
+<!-- Área de texto -->
 <textarea id="texto" placeholder="Escreve aqui..."></textarea>
 
+<!-- Botões principais -->
 <button onclick="guardar()">Guardar</button>
+<button onclick="exportar()">Exportar notas</button>
+<button onclick="mostrarImportar()">Importar notas</button>
+<button onclick="toggleDark()">Modo escuro</button>
+
+<!-- Ajuste de tamanho -->
+<select id="tamanho" onchange="ajustarTamanho()">
+    <option value="14">Letra pequena</option>
+    <option value="16" selected>Letra média</option>
+    <option value="20">Letra grande</option>
+</select>
+
+<!-- Caixa de exportação -->
+<div id="exportBox">
+    <h3>Notas exportadas</h3>
+    <textarea id="exportText" readonly></textarea>
+</div>
+
+<!-- Caixa de importação -->
+<div id="importBox">
+    <h3>Cola aqui as notas para importar</h3>
+    <textarea id="importText"></textarea>
+    <button onclick="importar()">Importar agora</button>
+</div>
 
 <script>
+function chave() {
+    return "notas_pagina_" + document.getElementById("pagina").value;
+}
+
 function guardar() {
     var t = document.getElementById("texto").value;
-    localStorage.setItem("notas", t);
+    localStorage.setItem(chave(), t);
     alert("Guardado!");
 }
 
-window.onload = function() {
-    var t = localStorage.getItem("notas");
-    if (t) document.getElementById("texto").value = t;
+function exportar() {
+    var t = localStorage.getItem(chave()) || "";
+    document.getElementById("exportText").value = t;
+    document.getElementById("exportBox").style.display = "block";
 }
+
+function mostrarImportar() {
+    document.getElementById("importBox").style.display = "block";
+}
+
+function importar() {
+    var t = document.getElementById("importText").value;
+    localStorage.setItem(chave(), t);
+    document.getElementById("texto").value = t;
+    alert("Importado!");
+}
+
+function trocarPagina() {
+    var t = localStorage.getItem(chave());
+    document.getElementById("texto").value = t || "";
+}
+
+function toggleDark() {
+    document.body.classList.toggle("dark");
+}
+
+function ajustarTamanho() {
+    var tam = document.getElementById("tamanho").value;
+    document.getElementById("texto").style.fontSize = tam + "px";
+}
+
+window.onload = function() {
+    trocarPagina();
+};
 </script>
 
 </body>
