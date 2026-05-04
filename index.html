@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Bloco de Notas</title>
+<title>Notas</title>
 <style>
 body {
     font-family: sans-serif;
@@ -19,94 +19,161 @@ textarea {
     height: 200px;
     font-size: 16px;
 }
-button, select {
+button, select, input {
     width: 100%;
     padding: 8px;
     margin-top: 8px;
     font-size: 16px;
 }
-#exportBox, #importBox {
-    display: none;
+
+/* Cartões estilo Google Keep */
+#listaNotas {
     margin-top: 15px;
 }
-#exportText, #importText {
-    width: 100%;
-    height: 150px;
-    font-size: 16px;
+.notaItem {
+    background: #fff8b3;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    border: 1px solid #e6d97a;
+}
+.dark .notaItem {
+    background: #333;
+    border-color: #555;
+}
+.notaTexto {
+    white-space: pre-wrap;
+    margin-bottom: 8px;
+}
+.notaData {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 6px;
+}
+.pinned {
+    border-left: 6px solid #ff9800;
 }
 </style>
 </head>
 <body>
 
-<h2>Bloco de Notas</h2>
+<h2>Notas</h2>
 
-<!-- Seleção de página -->
-<select id="pagina" onchange="trocarPagina()">
-    <option value="1">Página 1</option>
-    <option value="2">Página 2</option>
-    <option value="3">Página 3</option>
-</select>
+<input id="pesquisa" placeholder="Pesquisar..." oninput="mostrarNotas()">
 
-<!-- Área de texto -->
-<textarea id="texto" placeholder="Escreve aqui..."></textarea>
-
-<!-- Botões principais -->
-<button onclick="guardar()">Guardar</button>
-<button onclick="exportar()">Exportar notas</button>
-<button onclick="mostrarImportar()">Importar notas</button>
+<button onclick="novaNota()">Criar nova nota</button>
 <button onclick="toggleDark()">Modo escuro</button>
 
-<!-- Ajuste de tamanho -->
 <select id="tamanho" onchange="ajustarTamanho()">
     <option value="14">Letra pequena</option>
     <option value="16" selected>Letra média</option>
     <option value="20">Letra grande</option>
 </select>
 
-<!-- Caixa de exportação -->
-<div id="exportBox">
-    <h3>Notas exportadas</h3>
-    <textarea id="exportText" readonly></textarea>
+<!-- Editor -->
+<div id="editor" style="display:none;">
+    <textarea id="texto"></textarea>
+    <button onclick="guardar()">Guardar</button>
 </div>
 
-<!-- Caixa de importação -->
-<div id="importBox">
-    <h3>Cola aqui as notas para importar</h3>
-    <textarea id="importText"></textarea>
-    <button onclick="importar()">Importar agora</button>
-</div>
+<!-- Lista -->
+<div id="listaNotas"></div>
 
 <script>
-function chave() {
-    return "notas_pagina_" + document.getElementById("pagina").value;
+let notaAtual = null;
+
+function carregarNotas() {
+    return JSON.parse(localStorage.getItem("notas_keep")) || [];
+}
+
+function guardarNotas(notas) {
+    localStorage.setItem("notas_keep", JSON.stringify(notas));
+}
+
+function novaNota() {
+    notaAtual = null;
+    document.getElementById("texto").value = "";
+    document.getElementById("editor").style.display = "block";
 }
 
 function guardar() {
-    var t = document.getElementById("texto").value;
-    localStorage.setItem(chave(), t);
+    let texto = document.getElementById("texto").value;
+    let notas = carregarNotas();
+
+    if (notaAtual === null) {
+        notas.push({
+            id: Date.now(),
+            texto: texto,
+            data: new Date().toLocaleString(),
+            pinned: false
+        });
+    } else {
+        let n = notas.find(n => n.id === notaAtual);
+        if (n) {
+            n.texto = texto;
+            n.data = new Date().toLocaleString();
+        }
+    }
+
+    guardarNotas(notas);
+    mostrarNotas();
     alert("Guardado!");
 }
 
-function exportar() {
-    var t = localStorage.getItem(chave()) || "";
-    document.getElementById("exportText").value = t;
-    document.getElementById("exportBox").style.display = "block";
+function editar(id) {
+    let notas = carregarNotas();
+    let n = notas.find(n => n.id === id);
+    if (!n) return;
+
+    notaAtual = id;
+    document.getElementById("texto").value = n.texto;
+    document.getElementById("editor").style.display = "block";
 }
 
-function mostrarImportar() {
-    document.getElementById("importBox").style.display = "block";
+function apagar(id) {
+    let notas = carregarNotas();
+    notas = notas.filter(n => n.id !== id);
+    guardarNotas(notas);
+    mostrarNotas();
 }
 
-function importar() {
-    var t = document.getElementById("importText").value;
-    localStorage.setItem(chave(), t);
-    document.getElementById("texto").value = t;
-    alert("Importado!");
+function fixar(id) {
+    let notas = carregarNotas();
+    let n = notas.find(n => n.id === id);
+    if (!n) return;
+
+    n.pinned = !n.pinned;
+    guardarNotas(notas);
+    mostrarNotas();
 }
 
-function trocarPagina() {
-    var t = localStorage.getItem(chave());
-    document.getElementById("texto").value = t || "";
+function mostrarNotas() {
+    let notas = carregarNotas();
+    let div = document.getElementById("listaNotas");
+    let termo = document.getElementById("pesquisa").value.toLowerCase();
+
+    div.innerHTML = "";
+
+    // Filtrar por pesquisa
+    notas = notas.filter(n => n.texto.toLowerCase().includes(termo));
+
+    // Ordenar: fixadas primeiro
+    notas.sort((a, b) => b.pinned - a.pinned);
+
+    notas.forEach(n => {
+        let bloco = document.createElement("div");
+        bloco.className = "notaItem";
+        if (n.pinned) bloco.classList.add("pinned");
+
+        bloco.innerHTML =
+            "<div class='notaTexto'>" + (n.texto || "(vazia)") + "</div>" +
+            "<div class='notaData'>" + n.data + "</div>" +
+            "<button onclick='editar(" + n.id + ")'>Editar</button>" +
+            "<button onclick='apagar(" + n.id + ")'>Apagar</button>" +
+            "<button onclick='fixar(" + n.id + ")'>" + (n.pinned ? "Desafixar" : "Fixar") + "</button>";
+
+        div.appendChild(bloco);
+    });
 }
 
 function toggleDark() {
@@ -114,14 +181,13 @@ function toggleDark() {
 }
 
 function ajustarTamanho() {
-    var tam = document.getElementById("tamanho").value;
+    let tam = document.getElementById("tamanho").value;
     document.getElementById("texto").style.fontSize = tam + "px";
 }
 
-window.onload = function() {
-    trocarPagina();
-};
+window.onload = mostrarNotas;
 </script>
 
 </body>
 </html>
+
